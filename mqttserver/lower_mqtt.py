@@ -3,14 +3,12 @@
 import RPi.GPIO as GPIO
 import time
 import paho.mqtt.client as paho
-import bmp280_I2C as ALT
+import mpl3115a2 as ALT
 import subprocess
-import setInterval as thread
+import timer
 
 ''' Motor Setup '''
 
-livestreams = subprocess.Popen(['sh', 'mjpg-streamer.sh'])
-time.sleep(1)
 broker = "192.168.1.235"    # IP of MAIN broker Pi
 backupBroker = "192.168.1.113"
 port = 9001                 # Set in mosquitto.conf
@@ -19,20 +17,26 @@ port = 9001                 # Set in mosquitto.conf
 
 def on_connect(client, userdata, flags, rc):
     global altitude_thread
-    altitude_thread = thread.setInterval(0.5, publish_all_alti)
+    client.subscribe("altimeter/sealevelpressure")
+    altitude_thread = timer.setInterval(1.0, publish_all_alti)
+    altitude_thread.start()
     print("connected")
 
 def on_subscribe(client, userdata, mid, granted_qos):
-    pass
+    print("subscribed")
 
 def on_message(client, userdata, message):
+    msg = message.payload.decode("utf-8")
+    print(msg)
+    if message.topic == "altimeter/sealevelpressure":
+        ALT.sealevel_pressure(float(msg))
+
     # Not listening to anything bc the only time you would have to do switch
     # brokers is on disconnect
-    pass
 
 def on_disconnect(client, userdata, rc):
     global altitude_thread
-    print("I'm disconnected")
+    print("Lower Pi client disconnected")
     altitude_thread.cancel()
 
     # Connects to new broker on backup when main loses power
@@ -42,13 +46,13 @@ def on_disconnect(client, userdata, rc):
 
 def publish_all_alti():
     try:
-        alt = "%.1f" % ALT.altitude()
+        alt = ALT.altitude()
         client.publish("altimeter/altitude", alt)
 
         temp = "%.1f" % ALT.temperature()
         client.publish("altimeter/temperature", temp)
 
-        press = "%.1f" % ALT.pressure()
+        press = "%.2f" % ALT.pressure()
         client.publish("altimeter/pressure", press)
 
     except:

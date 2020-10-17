@@ -1,11 +1,11 @@
 #!/bin/bash
 cd /home/pi/facade-inspection-pi/mqttserver
 
-sleep 7
-python3 start_stream.py
+(sleep 3
+python3 start_stream.py) &
 
-sleep 4
-python3 lower_mqtt.py
+(sleep 10
+python3 lower_mqtt.py)
 
 function finish
 {
