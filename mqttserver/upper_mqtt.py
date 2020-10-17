@@ -158,7 +158,16 @@ try:
                 HOIST.stop()
 
             elif msg == "Switch to backup":
+                publish_timefromground()
                 client.unsubscribe("hoist")
+                client.unsubscribe("time/fromground")
+                client.unsubscribe("accelerometer/status")
+                try:
+                    acc_err_thread.cancel()
+                    timefromground_thread.cancel()
+                    angle_thread.cancel()
+                except NameError:
+                    pass
                 
             elif msg == "Disable leveling":
                 ignore_angle = True
@@ -208,9 +217,10 @@ try:
                 print("Accelerometer zeroed. Offset: ", ACC.offset)
 
         elif topic == "time/fromground":
-            print('time received ', msg)
-            HOIST.set_time(float(msg))
-            client.unsubscribe('time/fromground')
+            if msg != "Disconnected":
+                print('time received ', msg)
+                HOIST.set_time(float(msg))
+                client.unsubscribe('time/fromground')
 
         msg, topic = '', ''
         client.loop_stop()
