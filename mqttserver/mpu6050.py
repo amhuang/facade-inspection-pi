@@ -43,8 +43,6 @@ def roll(x,y,z):
 bus = smbus.SMBus(1) # bus = smbus.SMBus(0) fuer Revision 1
 address = 0x68       # via i2cdetect
 
-# Activate to be able to address the module
-bus.write_byte_data(address, power_mgmt_1, 0)
 
 # Scaled gyro readings by 131
 def scale_gyro():
@@ -62,9 +60,20 @@ def scale_accel():
 class ACC:
     def __init__(self, offset):
         self.offset = offset
-
+        self.error = False
+        try:
+            # Activate to be able to address the module
+            bus.write_byte_data(address, power_mgmt_1, 0)
+        except OSError:
+            self.error = True
+    
     def angle_raw(self):
-        acceleration = scale_accel()
+        try:
+            acceleration = scale_accel()
+            self.error = False
+        except OSError:
+            self.error = True
+        
         x = acceleration[0]
         y = acceleration[1]
         z = acceleration[2]
@@ -72,13 +81,15 @@ class ACC:
         return pitch(x,y,z)
 
     def angle(self):
-        timer = Timer().start()
+        t = timer.Timer()
+        t.start()
         count = 0
         lst = np.empty(0)
-        while (timer.countup() < .1):
+        while (t.countup() < .1):
             lst = np.insert(lst, count, self.angle_raw())
             count += 1
         return np.mean(lst) - self.offset
+
 '''
 hi = ACC(-1)
 
