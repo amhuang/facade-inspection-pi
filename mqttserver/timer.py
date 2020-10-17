@@ -31,7 +31,18 @@ class Timer:
             self.start()
             
         self._marker = time.perf_counter()
-        self.curr = self._marker - self._start_time
+        self.curr = round(self._marker - self._start_time, 2)
+        return self.curr
+    
+    def countup_half(self):
+        if self._start_time is None:
+            self.start()
+        
+        self._marker_tmp = time.perf_counter()
+        diff = self._marker_tmp - self._marker
+        self._start_time += diff/2
+        self._marker = self._marker_tmp
+        self.curr = round(self._marker - self._start_time, 2)
         return self.curr
     
     # Counts down from _marker
@@ -49,7 +60,24 @@ class Timer:
         diff = self._marker_tmp - self._marker
         self._start_time += 2 * diff
         self._marker = self._marker_tmp
-        self.curr = self._marker - self._start_time
+        self.curr = round(self._marker - self._start_time, 2)
+        return self.curr
+    
+    def countdown_half(self):
+        if self._start_time is None:
+            self.start()
+            
+        if self._marker is None:
+            self._marker = self._start_time
+            
+        #pushes forward temporary marker
+        self._marker_tmp = time.perf_counter()
+        
+        # takes diff btwn tmp and marker and moves starttime up by that much
+        diff = self._marker_tmp - self._marker
+        self._start_time += 1.5 * diff
+        self._marker = self._marker_tmp
+        self.curr = round(self._marker - self._start_time, 2)
         return self.curr
     
     # Start threads that refresh self.curr every 0.1s
@@ -60,25 +88,33 @@ class Timer:
             action()
     
     # Starts a countup thread 
-    def start_countup(self):
+    def start_countup(self, rate="normal"):
         if (self._start_time is None) or (self._marker is None):
             self.countup()
         else:
             self._marker = time.perf_counter()
             self._start_time = self._marker - self.curr
             
-        self.threadUp = threading.Thread(target=self.__interval, args=(self.countup,))
+        if rate == "half":
+            self.threadUp = threading.Thread(target=self.__interval, args=(self.countup_half,))
+        else:
+            self.threadUp = threading.Thread(target=self.__interval, args=(self.countup,))
+        
         self.stopEvent.clear()
         self.threadUp.start()
     
-    def start_countdown(self):
+    def start_countdown(self, rate="normal"):
         if (self._start_time is None) or (self._marker is None):
             self.countdown()
         else:
             self._marker = time.perf_counter()
             self._start_time = self._marker - self.curr
+        
+        if rate == "half":
+            self.threadDown = threading.Thread(target=self.__interval, args=(self.countdown_half,))
+        else:
+            self.threadDown = threading.Thread(target=self.__interval, args=(self.countdown,))
             
-        self.threadDown = threading.Thread(target=self.__interval, args=(self.countdown,))
         self.stopEvent.clear()
         self.threadDown.start()
         
@@ -89,20 +125,40 @@ class Timer:
             self.threadUp.join()
         if self.threadDown is not None:
             self.threadDown.join()
-        
+
+class setInterval:
+    def __init__(self, interval, action) :
+        self.interval = interval
+        self.action = action
+        self.stopEvent = threading.Event()
+        self.thread = threading.Thread(target=self.__setInterval)
+
+    def __setInterval(self) :
+        nextTime = time.time() + self.interval
+        while not self.stopEvent.wait(nextTime - time.time()) :
+            nextTime += self.interval
+            self.action()
+
+    def start(self) :
+        self.thread.start();
+
+    def cancel(self) :
+        self.stopEvent.set()
+
 '''
 hi = Timer()
-hi.start_from(5)
-hi.start_countup()
+hi.start_from(20)
+hi.start_countdown("half")
 
-while hi.curr < 10:
+while True:
     print(hi.curr)
-    time.sleep(1)
+    time.sleep(.2)
     print(hi.curr)
-    time.sleep(1)
+    time.sleep(.2)
+    print(hi.curr)
+    time.sleep(.2)
+    print(hi.curr)
+    time.sleep(.2)
     hi.pause()
-    print('paused')
-    time.sleep(1)
-    hi.start_countup()
-
+    hi.start_countdown()
 '''
