@@ -221,3 +221,4 @@ finally:
     client.loop_stop()
     client.disconnect()
     HOIST.stop()
+    GPIO.cleanup()
