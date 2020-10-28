@@ -8,10 +8,10 @@ import RPi.GPIO as GPIO
 import time
 import paho.mqtt.client as paho
 import subprocess
-#import setInterval as thread
 import mpu6050
 import hoist_control as HOIST
 import timer
+import rotary
 
 ''' Setup & Global Variables '''
 
@@ -30,6 +30,7 @@ angle_error_count = 0
 ACC = mpu6050.ACC(offset=0)
 ignore_angle = False
 
+ROTARY = rotary.Rotary(0.1)
 last_msg_timer = timer.Timer()
 
 '''
@@ -42,15 +43,18 @@ port = 9001                 # Set in mosquitto.conf
 topic, msg = '', ''
 
 def on_connect(client, userdata, flags, rc):
-    global angle_thread, timefromground_thread, ignore_angle, acc_err_thread
+    global angle_thread, gndtime_thread, ignore_angle, acc_err_thread, height_thread
 
     client.subscribe("hoist")
     client.subscribe("time/fromground")
     client.subscribe("accelerometer/status")
+    client.subscribe("height/status")
     print("connected")
 
-    timefromground_thread = timer.setInterval(5, publish_timefromground)
-    timefromground_thread.start()
+    gndtime_thread = timer.setInterval(5, publish_gndtime)
+    gndtime_thread.start()
+    height_thread = timer.setInterval(.5, publish_height)
+    height_thread.start()
     acc_err_thread = timer.setInterval(.5, accel_disconnect)
 
     if ACC.error == True:
@@ -115,10 +119,12 @@ def accel_disconnect(recourse="now"):
         # Stops publishing accel data if disconnected for over 1sec
         if angle_error_count == 10:
             HOIST.stop()
-            angle_thread.cancel()
+            try:
+                angle_thread.cancel()
+            except:
+                pass
             print("accelerometer disconnect 1s")
-            client.publish("accelerometer/status", "Disconnected")
-        return
+            client.publish("accelerometer/status", "Backup disconnected")
 
     else:
         client.publish("accelerometer/status", "Disconnected")
@@ -126,8 +132,11 @@ def accel_disconnect(recourse="now"):
 def all_same(lst):
     return not lst or lst.count(lst[0]) == len(lst)
 
-def publish_timefromground():
+def publish_gndtime():
     client.publish('time/fromground', str(HOIST.time_from_ground.curr))
+    
+def publish_height():
+    client.publish('height', ROTARY.dist)
 
 
 '''
@@ -198,7 +207,7 @@ try:
                 HOIST.down_left()
 
             elif msg == "Down right":
-                    HOIST.down_right()
+                HOIST.down_right()
 
         elif topic == "accelerometer/status":
 
@@ -209,8 +218,14 @@ try:
 
         elif topic == "time/fromground":
             print('time received ', msg)
-            HOIST.set_time(float(msg))
-            client.unsubscribe('time/fromground')
+            if msg != 'Disconnected':
+                HOIST.set_time(float(msg))
+                client.unsubscribe('time/fromground')
+        
+        elif topic == "height/status":
+            if msg == 'Zero height':
+                ROTARY.zero_height()
+                print('Height zeroed')
 
         msg, topic = '', ''
         client.loop_stop()

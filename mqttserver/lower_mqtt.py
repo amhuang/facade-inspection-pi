@@ -20,6 +20,7 @@ import subprocess
 import timer
 import hoist_control as HOIST
 import mpu6050
+import rotary
 
 ''' Setup & Global Variables '''
 
@@ -38,9 +39,8 @@ angle_error_count = 0
 ACC = mpu6050.ACC(offset=0)
 ignore_angle = False
 
+ROTARY = rotary.Rotary(0.1)
 last_msg_timer = timer.Timer()
-exec_shutdown = timer.Timer()
-
 backup_listen = False
 
 '''
@@ -48,7 +48,7 @@ MQTT Setup
 '''
 
 broker = "192.168.1.235"    # IP of MAIN broker Pi
-backupBroker = "192.168.1.113"
+backupBroker = "192.168.1.137"
 port = 9001                 # Set in mosquitto.conf
 msg, topic = '', ''
 
@@ -57,6 +57,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("hoist")
     client.subscribe("status")
     client.subscribe("time/fromground")
+    #client.subscribe("height")
     print("connected")
     
 def on_message(client, userdata, message):
@@ -64,11 +65,12 @@ def on_message(client, userdata, message):
     global angle_thread, acc_err_thread, timefromground_thread 
     msg = message.payload.decode("utf-8")
     topic = message.topic
-    last_msg_timer.start()
+    
+    if backup_listen:
+        last_msg_timer.start()
 
     # Deals with Scenario 2 - original broker stays on
-    if msg == "Switch to backup" or msg == 'Upper Pi client disconnected':
-        global backup_listen
+    elif msg == "Switch to backup" or msg == 'Upper Pi client disconnected':
         backup_listen = True
         
         # Try to start publishing angle
@@ -80,15 +82,17 @@ def on_message(client, userdata, message):
             angle_thread = timer.setInterval(0.25, publish_angle)
             angle_thread.start()
         
+        # stops listening for height
+        client.unsubscribe('height')
+        
         # Starts publishing time from ground
         client.unsubscribe('time/fromground')
         timefromground_thread = timer.setInterval(5, publish_timefromground)
         timefromground_thread.start()
+        client.publish("status", "Backup Pi client connected")
         
-        client.publish("status", "Backup Pi client connected");
-    
-    # Keeps track of time from ground at all times
-    elif topic == "time/fromground":
+    # Keeps track of time from ground and height while connected
+    if topic == "time/fromground":
         if msg != 'Disconnected':
             print('time received ', msg)
             HOIST.set_time(float(msg))
