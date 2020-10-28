@@ -38,7 +38,7 @@ MQTT Setup
 '''
 #getip = subprocess.Popen(['hostname', '-I'], stdout=subprocess.PIPE)
 #broker = getip.stdout.read().decode('utf-8')    # IP of broker Pi
-broker = "192.168.1.235"
+broker = "192.168.1.20"
 port = 9001                 # Set in mosquitto.conf
 topic, msg = '', ''
 
@@ -124,7 +124,7 @@ def accel_disconnect(recourse="now"):
             except:
                 pass
             print("accelerometer disconnect 1s")
-            client.publish("accelerometer/status", "Backup disconnected")
+            client.publish("accelerometer/status", "Disconnected")
 
     else:
         client.publish("accelerometer/status", "Disconnected")
@@ -218,9 +218,10 @@ try:
 
         elif topic == "time/fromground":
             print('time received ', msg)
-            if msg != 'Disconnected':
+            try: 
                 HOIST.set_time(float(msg))
-                client.unsubscribe('time/fromground')
+            except:
+                pass
         
         elif topic == "height/status":
             if msg == 'Zero height':

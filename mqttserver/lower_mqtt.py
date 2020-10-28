@@ -53,10 +53,10 @@ port = 9001                 # Set in mosquitto.conf
 msg, topic = '', ''
 
 def on_connect(client, userdata, flags, rc):
-    global backup_listen, angle_thread, acc_err_thread, timefromground_thread 
     client.subscribe("hoist")
     client.subscribe("status")
     client.subscribe("time/fromground")
+    client.subscribe("accelerometer/status")
     #client.subscribe("height")
     print("connected")
     
@@ -68,14 +68,23 @@ def on_message(client, userdata, message):
     
     if backup_listen:
         last_msg_timer.start()
+    
+    # Keeps track of time from ground and height while connected
+    if topic == "time/fromground":
+        print('time received ', msg)
+        try: 
+            HOIST.set_time(float(msg))
+        except:
+            pass
 
     # Deals with Scenario 2 - original broker stays on
-    elif msg == "Switch to backup" or msg == 'Upper Pi client disconnected':
+    elif not backup_listen and (msg == "Switch to backup" or msg == 'Upper Pi client disconnected'):
         backup_listen = True
         
         # Try to start publishing angle
         if ACC.error == True:
             ignore_angle = True
+            
             acc_err_thread = timer.setInterval(.5, accel_disconnect)
             acc_err_thread.start()
         else:
@@ -90,15 +99,9 @@ def on_message(client, userdata, message):
         timefromground_thread = timer.setInterval(5, publish_timefromground)
         timefromground_thread.start()
         client.publish("status", "Backup Pi client connected")
-        
-    # Keeps track of time from ground and height while connected
-    if topic == "time/fromground":
-        if msg != 'Disconnected':
-            print('time received ', msg)
-            HOIST.set_time(float(msg))
 
 def on_disconnect(client, userdata, rc):
-    global broker
+    global broker, backup_listen, acc_err_thread
     print("Disconnected from broker")
     client.loop_stop()
 
@@ -110,10 +113,6 @@ def on_disconnect(client, userdata, rc):
     broker = backupBroker
 
     client.connect(broker, port)
-    client.subscribe("hoist")
-    client.subscribe("status")
-    client.subscribe("time/fromground")
-    client.subscribe("accelerometer/status")
     
     try:
         timefromground_thread.cancel()
@@ -128,6 +127,7 @@ def on_disconnect(client, userdata, rc):
             angle_thread.cancel()
         except:
             pass
+        
         acc_err_thread = timer.setInterval(.5, accel_disconnect)
         acc_err_thread.start()
     else:
@@ -165,7 +165,7 @@ def publish_angle():
         accel_disconnect("retry")
 
 def accel_disconnect(recourse="now"):
-    global angle_error_count, angle_thread, acc_err_thread
+    global angle_error_count, angle_thread
     
     if recourse == "retry":
         angle_error_count += 1
@@ -213,7 +213,6 @@ try:
 
         # Enters with either Scenario 1 or 2
         if backup_listen:
-
             if (last_msg_timer.countup() >= 1 or HOIST.time_from_ground.curr <= -5):
                 # timer starts in on_message received
                 HOIST.stop()
@@ -228,7 +227,6 @@ try:
                     ignore_angle = True
                     try:
                         acc_err_thread.cancel()
-                        print("cancel thread")
                     except NameError:
                         pass
 

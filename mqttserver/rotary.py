@@ -35,6 +35,7 @@ class Rotary:
             self.dist = (2 * math.pi *self.r) * 3.28 * (self.rotary_count/30)
             self.clk_prev = clk_curr
 
+print(type("hi") == type('str'))
 '''
 hi = Rotary(0.1)
 while True:
