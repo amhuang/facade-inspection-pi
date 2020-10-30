@@ -38,7 +38,7 @@ MQTT Setup
 '''
 #getip = subprocess.Popen(['hostname', '-I'], stdout=subprocess.PIPE)
 #broker = getip.stdout.read().decode('utf-8')    # IP of broker Pi
-broker = "192.168.1.20"
+broker = "192.168.1.235"
 port = 9001                 # Set in mosquitto.conf
 topic, msg = '', ''
 
@@ -150,13 +150,13 @@ client.on_message = on_message
 client.on_disconnect = on_disconnect
 
 client.will_set("status", "Upper Pi client disconnected", retain=False)
-client.connect(broker, port, keepalive=5)
+client.connect(broker, port, keepalive=3)
 
 try:
     while True:
         client.loop_start()
 
-        if (last_msg_timer.countup() >= 1 or HOIST.time_from_ground.curr <= -5):
+        if (last_msg_timer.countup() >= 1):
             # timer starts in on_message received
             HOIST.stop()
 
@@ -221,6 +221,7 @@ try:
             try: 
                 HOIST.set_time(float(msg))
             except:
+                print('error in time from ground: ', msg)
                 pass
         
         elif topic == "height/status":

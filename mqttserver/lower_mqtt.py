@@ -30,11 +30,6 @@ GPIO.setwarnings(False)
 UP_L, DOWN_L = 19, 26
 UP_R, DOWN_R = 20, 21
 
-GPIO.setup(UP_L,GPIO.OUT)
-GPIO.setup(DOWN_L,GPIO.OUT)
-GPIO.setup(UP_R,GPIO.OUT)
-GPIO.setup(DOWN_R,GPIO.OUT)
-
 angle_error_count = 0
 ACC = mpu6050.ACC(offset=0)
 ignore_angle = False
@@ -108,10 +103,16 @@ def on_disconnect(client, userdata, rc):
     # Starts a new broker on backup when main loses power
     run_broker = subprocess.Popen(["mosquitto", "-c", "/etc/mosquitto/mosquitto.conf"])
     time.sleep(1)
-
+    
+    # Enables GPIO pins for hoist control
+    GPIO.setup(UP_L,GPIO.OUT)
+    GPIO.setup(DOWN_L,GPIO.OUT)
+    GPIO.setup(UP_R,GPIO.OUT)
+    GPIO.setup(DOWN_R,GPIO.OUT)
+    
+    # Reconnects client to backup broker
     backup_listen = True
     broker = backupBroker
-
     client.connect(broker, port)
     
     try:
@@ -213,7 +214,7 @@ try:
 
         # Enters with either Scenario 1 or 2
         if backup_listen:
-            if (last_msg_timer.countup() >= 1 or HOIST.time_from_ground.curr <= -5):
+            if (last_msg_timer.countup() >= 1):
                 # timer starts in on_message received
                 HOIST.stop()
 

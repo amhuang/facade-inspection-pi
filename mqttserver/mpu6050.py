@@ -71,14 +71,17 @@ class ACC:
         try:
             acceleration = scale_accel()
             self.error = False
+            
+            x = acceleration[0]
+            y = acceleration[1]
+            z = acceleration[2]
+
+            return pitch(x,y,z)
+        
         except OSError:
             self.error = True
+            print('we have a problem')
         
-        x = acceleration[0]
-        y = acceleration[1]
-        z = acceleration[2]
-
-        return pitch(x,y,z)
 
     def angle(self):
         t = timer.Timer()
