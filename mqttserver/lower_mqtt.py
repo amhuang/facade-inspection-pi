@@ -20,21 +20,20 @@ import subprocess
 import timer
 import hoist_control as HOIST
 import mpu6050
-import rotary
 
 ''' Setup & Global Variables '''
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
-
 UP_L, DOWN_L = 19, 26
 UP_R, DOWN_R = 20, 21
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+GPIO.cleanup()
 
 angle_error_count = 0
 ACC = mpu6050.ACC(offset=0)
 ignore_angle = False
 
-ROTARY = rotary.Rotary(0.1)
 last_msg_timer = timer.Timer()
 backup_listen = False
 
