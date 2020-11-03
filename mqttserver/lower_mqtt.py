@@ -41,7 +41,7 @@ backup_listen = False
 MQTT Setup
 '''
 
-broker = "192.168.1.235"    # IP of MAIN broker Pi
+broker = "192.168.1.226"    # IP of MAIN broker Pi
 backupBroker = "192.168.1.137"
 port = 9001                 # Set in mosquitto.conf
 msg, topic = '', ''

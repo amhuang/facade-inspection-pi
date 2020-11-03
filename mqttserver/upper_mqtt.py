@@ -38,7 +38,7 @@ MQTT Setup
 '''
 #getip = subprocess.Popen(['hostname', '-I'], stdout=subprocess.PIPE)
 #broker = getip.stdout.read().decode('utf-8')    # IP of broker Pi
-broker = "192.168.1.235"
+broker = "192.168.1.226"
 port = 9001                 # Set in mosquitto.conf
 topic, msg = '', ''
 
