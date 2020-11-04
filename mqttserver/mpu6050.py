@@ -80,7 +80,7 @@ class ACC:
         
         except OSError:
             self.error = True
-            print('we have a problem')
+            print('we have an (accelerometer) problem')
         
 
     def angle(self):
@@ -93,7 +93,7 @@ class ACC:
             count += 1
         return np.mean(lst) - self.offset
 
-'''
+
 hi = ACC(-1)
 
 while True:
@@ -102,4 +102,3 @@ while True:
     print(angle)
     stop = time.time()
     print("time = ", stop - start)
-'''

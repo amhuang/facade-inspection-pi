@@ -65,7 +65,7 @@ def on_connect(client, userdata, flags, rc):
         angle_thread.start()
 
 def on_message(client, userdata, message):
-    global topic, msg
+    global topic, msg, last_msg_timer
     topic = message.topic
     msg = message.payload.decode("utf-8")
     last_msg_timer.start()
@@ -154,6 +154,7 @@ client.connect(broker, port, keepalive=3)
 
 try:
     while True:
+        
         client.loop_start()
 
         if (last_msg_timer.countup() >= 1):
@@ -233,9 +234,9 @@ try:
         client.loop_stop()
 
 finally:
-    # opens relays broker keeps running but this file doesnt
-    # and disconnect is ungraceful
-    client.loop_stop()
-    client.disconnect()
     HOIST.stop()
     GPIO.cleanup()
+    # opens relays broker keeps running but this file doesnt
+    # and disconnect is ungraceful
+    client.disconnect()
+    
