@@ -1,3 +1,8 @@
+'''
+Gathers data from rotary encoder and converts it to linear distance
+in feet. Can also be reset to 0
+'''
+
 from RPi import GPIO
 import time
 import math
@@ -17,15 +22,14 @@ class Rotary:
         self.clk_prev = GPIO.input(clk)
         self.thread = timer.setInterval(0.002, self.height)
         self.thread.start()
-        
-    
+
     def zero_height(self):
         self.dist = 0
         self.rotary_count = 0
-    
+
     def height(self):
         clk_curr = GPIO.input(clk)
-        
+
         if clk_curr != self.clk_prev:
             dt_curr = GPIO.input(dt)
             if dt_curr != clk_curr:
@@ -35,7 +39,6 @@ class Rotary:
             self.dist = (2 * math.pi *self.r) * 3.28 * (self.rotary_count/30)
             self.clk_prev = clk_curr
 
-print(type("hi") == type('str'))
 '''
 hi = Rotary(0.1)
 while True:

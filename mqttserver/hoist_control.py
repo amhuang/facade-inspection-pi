@@ -1,3 +1,7 @@
+'''
+Functions called by MQTT clients to operate the hoists
+'''
+
 import RPi.GPIO as GPIO
 import time
 import mpu6050
@@ -28,10 +32,12 @@ timer_exec = Timer()
 
 ACC = mpu6050.ACC(offset=0)
 
+# Sets accelerometer offset
 def set_offset(off):
     ACC.offset = off
     print("hoist offset: ", ACC.offset)
 
+# Sets a "time from ground" to start from
 def set_time(init_time):
     global time_from_ground
     time_from_ground = Timer()
@@ -99,7 +105,7 @@ def down_right():
 
 
 '''
-Leveling algorithm for control of both hoists
+Leveling algorithm for when both hoists are used
 If the angle is outside of a threshold range, this algorithm
 levels the hoist up until a certain buffer angle (undershoot).
 When within the threshold range, both hoists are on. These
@@ -165,9 +171,10 @@ def level_down():
     except:
         stop()
 
+# Levels the hoist in place
 def make_level():
     timer = Timer()
-    max_time = 3
+    max_time = 3    # not allowed to level more than 3 sec
 
     try:
         angle = ACC.angle()

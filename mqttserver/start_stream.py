@@ -1,3 +1,8 @@
+'''
+Regex to grab v4l2 ID off each camera  (/dev/videoX) from cmd line args
+and uses them to start mjpg-steramer to port 8080
+'''
+
 import subprocess
 import re
 import time
@@ -14,7 +19,7 @@ lst = ["mjpg_streamer"]
 for device in devices:
     lst.append("-i")
     lst.append("input_uvc.so -d " + device + " -r 1920x1080")
-    
+
 lst.append("-o")
 lst.append("output_http.so -p " + str(port))
 subprocess.Popen(lst)

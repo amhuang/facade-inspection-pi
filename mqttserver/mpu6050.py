@@ -1,5 +1,10 @@
-'''  Neg angle when side with VCC/GN (LEFT hoist) is lower
-Pos angle when side with INT/ADD (RIGHT hoist) is lower '''
+'''
+Collects accel in 3 directions from MPU6050 and uses them to
+calculate pitch
+
+Neg angle when side with VCC/GN (LEFT hoist) is lower
+Pos angle when side with INT/ADD (RIGHT hoist) is lower
+'''
 
 import smbus
 import math
@@ -66,22 +71,22 @@ class ACC:
             bus.write_byte_data(address, power_mgmt_1, 0)
         except OSError:
             self.error = True
-    
+
     def angle_raw(self):
         try:
             acceleration = scale_accel()
             self.error = False
-            
+
             x = acceleration[0]
             y = acceleration[1]
             z = acceleration[2]
 
             return pitch(x,y,z)
-        
+
         except OSError:
             self.error = True
             print('we have an (accelerometer) problem')
-        
+
 
     def angle(self):
         t = timer.Timer()
@@ -93,7 +98,7 @@ class ACC:
             count += 1
         return np.mean(lst) - self.offset
 
-
+'''
 hi = ACC(-1)
 
 while True:
@@ -102,3 +107,4 @@ while True:
     print(angle)
     stop = time.time()
     print("time = ", stop - start)
+'''

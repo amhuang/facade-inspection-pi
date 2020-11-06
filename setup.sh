@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Installs and configures dependencies necessary for blank Pi
+# Installs and configures dependencies necessary for a blank Pi
 
 # Install mjpg-streamer
 cd
