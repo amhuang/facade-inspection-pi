@@ -9,6 +9,8 @@ import time
 import paho.mqtt.client as paho
 import subprocess
 import mpu6050
+import bmp280
+import mpl3115a2
 import hoist_control as HOIST
 import timer
 import rotary
@@ -18,7 +20,7 @@ import rotary
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
-UP_L, DOWN_L = 19, 26
+UP_L, DOWN_L = 24, 22
 UP_R, DOWN_R = 20, 21
 
 GPIO.setup(UP_L,GPIO.OUT)
@@ -28,6 +30,7 @@ GPIO.setup(DOWN_R,GPIO.OUT)
 
 angle_error_count = 0   # Sends accel disconnected once this hits certain num
 ACC = mpu6050.ACC(offset=0)
+ALT = mpl3115a2.ALT(1015)
 ignore_angle = False    # Toggled by UI
 
 ROTARY = rotary.Rotary(0.1)     # rotary encoder
@@ -39,6 +42,7 @@ MQTT Setup
 broker = "192.168.1.226"    # Config'd to be static
 port = 9001                 # Set in mosquitto.conf
 topic, msg = '', ''
+
 
 def on_connect(client, userdata, flags, rc):
     global angle_thread, gndtime_thread, acc_err_thread, height_thread
@@ -62,6 +66,10 @@ def on_connect(client, userdata, flags, rc):
     else:
         angle_thread = timer.setInterval(0.25, publish_angle)
         angle_thread.start()
+        
+    if ALT.error == True:
+        height_thread.cancel()
+        print("altimeter disconnected from start")
 
 def on_message(client, userdata, message):
     global topic, msg, last_msg_timer
@@ -72,17 +80,21 @@ def on_message(client, userdata, message):
     last_msg_timer.start()
 
 def on_disconnect(client, userdata, rc):
-    global angle_thread, broker, port
+    global angle_thread, gndtime_thread, height_thread
+    global broker, port
 
     # Stops hoist and stops publishing angle
     HOIST.stop()
     try:
         angle_thread.cancel()
+        gndtime_thread.cancel()
+        height_thread.cancel()
     except NameError:
         pass
     print("client disconnected. Reason code", rc)
 
     # Attempts to reconnect to broker (self)
+    time.sleep(5)
     client.connect(broker, port, keepalive=5)
 
 '''
@@ -139,6 +151,7 @@ def accel_disconnect(recourse="now"):
 
     # Immediately reports accel disconnected to UI
     else:
+        print("accel disconnect immediate")
         client.publish("accelerometer/status", "Disconnected")
 
 def all_same(lst):
@@ -148,7 +161,14 @@ def publish_gndtime():
     client.publish('time/fromground', str(HOIST.time_from_ground.curr))
 
 def publish_height():
-    client.publish('height', ROTARY.dist)
+    if ALT.error == False:
+        alt = ALT.altitude()
+        if alt is not None:
+            client.publish('height', ALT.altitude())
+    else:
+        print("altimeter disconnected while in thread")
+    
+    #client.publish('height', ROTARY.dist)
 
 
 '''
@@ -241,7 +261,8 @@ try:
 
         elif topic == "height/status":
             if msg == 'Zero height':
-                ROTARY.zero_height()
+                ALT    .zero_height()
+                #ROTARY.zero_height()
                 print('Height zeroed')
 
         msg, topic = '', ''

@@ -6,7 +6,7 @@ cd /home/pi/facade-inspection-pi/mqttserver
 python3 start_stream.py) &
 
 # Opens MQTT client which connects to broker on upper
-(sleep 60
+(sleep 65
 python3 lower_mqtt.py)
 
 # Runs on ctrl-C to clean up everything

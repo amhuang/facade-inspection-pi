@@ -26,7 +26,7 @@ import mpu6050
 
 ''' Setup & Global Variables '''
 
-UP_L, DOWN_L = 19, 26
+UP_L, DOWN_L = 24, 22
 UP_R, DOWN_R = 20, 21
 
 GPIO.setwarnings(False)
