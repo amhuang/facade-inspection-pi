@@ -13,7 +13,7 @@ import threading
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
-UP_L, DOWN_L = 19, 26
+UP_L, DOWN_L = 24, 22
 UP_R, DOWN_R = 20, 21
 
 GPIO.setup(UP_L,GPIO.OUT)

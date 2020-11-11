@@ -10,6 +10,11 @@ All communication utilizes MQTT with Websockets. The Pis should start up and con
 
 This Pi should be configured to automatically run `upper.sh` on startup.
 
+Notes:
+
+- This Pi can use either a rotary encoder or an altimeter to measure height (preferably rotary encoder since it's much more accurate and not dependent on the consistency of the weather). The just replace the `upper_mqtt.py` in `mqttserver` which uses an altimeter with the version in `archive` that uses the rotary encoder.
+- If you are using the altimeter, **you'll need to update the sea level pressure in hPa `upper_mqtt.py`**. I've commented where this needs to happen. You can find this info on any weather report, you'll probably just need to convert it from inHg to hPa.
+
 What this Pi does:
 
 - Given commands from the UI, this can level the frame in place, run the two hoists together with or without a leveling algorithm, and run each hoist independently.
@@ -22,7 +27,7 @@ What this Pi does:
 What this Pi is connected to:
 
 - Accelerometer
-- Rotary encoder
+- Rotary encoder OR alimeter
 - Both hoists
 - 3 USB cameras
 - Ethernet to router

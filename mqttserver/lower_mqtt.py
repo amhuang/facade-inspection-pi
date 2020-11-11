@@ -1,6 +1,9 @@
 '''
 Lower Pi MQTT Client
 
+When the main Pi fails, runs two hoists and collects and publishes
+accelerometer and time data.
+
 This script is equipped to handle 2 scenarios if the main pi fails:
 1. Power to main Pi (broker) lost. On disconnection from the broker, it will
     run a one-line command to start up a new broker on this Pi running in the
@@ -11,9 +14,7 @@ This script is equipped to handle 2 scenarios if the main pi fails:
     topic, which will cause the main Pi to unsubscribe to "hoist" and thus not
     respond to messages from it. Upon receiving that message, this Pi will
     then be able to respond to "up" "off" and "down" from "hoist". The main Pi
-    *will remain the broker* to avoid having to reconnect everything.
-
-Does NOT take height data
+    will remain the broker to simplify the process.
 '''
 
 import RPi.GPIO as GPIO
@@ -28,10 +29,8 @@ import mpu6050
 
 UP_L, DOWN_L = 24, 22
 UP_R, DOWN_R = 20, 21
-
 GPIO.setwarnings(False)
-# Not sure why but without this upper pi's pins can't communicate with
-# the relays, might be bc GPIO.output still diverts current?
+# Cleanup bc pins are set up when hoist_control imported
 GPIO.cleanup()
 
 angle_error_count = 0

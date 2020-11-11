@@ -2,16 +2,17 @@
 cd /home/pi/facade-inspection-pi/mqttserver
 
 # Starts video streams then starts MQTT broker
-(sleep 20
+(sleep 20s
 python3 start_stream.py
 ) &
 
 # Opens MQTT client which connects to brokers
 # Time is long bc router takes forever to turn on but honestly I'm not
 # really sure so maybe think abt this
-(sleep 55
-mosquitto -c /etc/mosquitto/mosquitto.conf
-sleep 5
+(sleep 55s
+mosquitto -c /etc/mosquitto/mosquitto.conf) &
+
+(sleep 60s
 python3 upper_mqtt.py)
 
 # Runs on ctrl-C to clean up everything

@@ -2,6 +2,7 @@
 Upper Pi MQTT Client
 
 Runs two hoists, publishes and collects accelerometer, time, and height data.
+This version uses an altimeter to measure height.
 '''
 
 import RPi.GPIO as GPIO
@@ -10,30 +11,18 @@ import paho.mqtt.client as paho
 import subprocess
 import mpu6050
 import bmp280
-#import mpl3115a2
+#import mpl3115a2  # optionally can use this altimeter
 import hoist_control as HOIST
 import timer
-#import rotary
 
 ''' Setup & Global Variables '''
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
-
-UP_L, DOWN_L = 24, 22
-UP_R, DOWN_R = 20, 21
-
-GPIO.setup(UP_L,GPIO.OUT)
-GPIO.setup(DOWN_L,GPIO.OUT)
-GPIO.setup(UP_R,GPIO.OUT)
-GPIO.setup(DOWN_R,GPIO.OUT)
+ALT = bmp280.ALT(1015)  # Param is sea pressure level (hPa). UPDATE AS NEEDED
 
 angle_error_count = 0   # Sends accel disconnected once this hits certain num
 ACC = mpu6050.ACC(offset=0)
-ALT = bmp280.ALT(1015)
 ignore_angle = False    # Toggled by UI
 
-ROTARY = rotary.Rotary(0.1)     # rotary encoder
 last_msg_timer = timer.Timer()  # keeps time since last msg received
 
 '''
@@ -42,7 +31,6 @@ MQTT Setup
 broker = "192.168.1.226"    # Config'd to be static
 port = 9001                 # Set in mosquitto.conf
 topic, msg = '', ''
-
 
 def on_connect(client, userdata, flags, rc):
     global angle_thread, gndtime_thread, acc_err_thread, height_thread
@@ -54,9 +42,10 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("height/status")
     print("connected")
 
+    client.publish("status", "Upper Pi client connected")
     gndtime_thread = timer.setInterval(5, publish_gndtime)
     gndtime_thread.start()
-    height_thread = timer.setInterval(1, publish_height)
+    height_thread = timer.setInterval(.5, publish_height)
     height_thread.start()
     acc_err_thread = timer.setInterval(.5, accel_disconnect)
 
@@ -66,7 +55,7 @@ def on_connect(client, userdata, flags, rc):
     else:
         angle_thread = timer.setInterval(0.25, publish_angle)
         angle_thread.start()
-        
+
     if ALT.error == True:
         height_thread.cancel()
         print("altimeter disconnected from start")
@@ -94,8 +83,11 @@ def on_disconnect(client, userdata, rc):
     print("client disconnected. Reason code", rc)
 
     # Attempts to reconnect to broker (self)
-    time.sleep(5)
-    client.connect(broker, port, keepalive=5)
+    time.sleep(3s)
+    try:
+        client.connect(broker, port, keepalive=5)
+    except:
+        pass
 
 '''
 Processing and publishing data
@@ -167,8 +159,6 @@ def publish_height():
             client.publish('height', ALT.altitude())
     else:
         print("altimeter disconnected while in thread")
-    
-    #client.publish('height', ROTARY.dist)
 
 
 '''
@@ -251,6 +241,7 @@ try:
                 HOIST.set_offset(ACC.offset)
                 print("Accelerometer zeroed. Offset: ", ACC.offset)
 
+        # For sending time from ground
         elif topic == "time/fromground":
             print('time received ', msg)
             try:
@@ -259,9 +250,10 @@ try:
                 print('error in time from ground: ', msg)
                 pass
 
+        # For zeroing the altimeter
         elif topic == "height/status":
             if msg == 'Zero height':
-                ALT    .zero_height()
+                ALT.zero_height()
                 #ROTARY.zero_height()
                 print('Height zeroed')
 
