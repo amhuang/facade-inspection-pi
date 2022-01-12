@@ -1,6 +1,6 @@
 '''
 Gathers data from rotary encoder and converts it to linear distance
-in feet. Can also be reset to 0
+in meters. Can also be reset to 0
 '''
 
 from RPi import GPIO
@@ -16,7 +16,7 @@ GPIO.setup(dt, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 class Rotary:
     def __init__(self, r):
-        self.dist = 0         # This should be in feet
+        self.dist = 0         # in meters
         self.r = r
         self.rotary_count = 0
         self.clk_prev = GPIO.input(clk)
@@ -36,7 +36,7 @@ class Rotary:
                 self.rotary_count += 1
             else:
                 self.rotary_count -= 1
-            self.dist = (2 * math.pi *self.r) * 3.28 * (self.rotary_count/30)
+            self.dist = (2 * math.pi *self.r) * (self.rotary_count/30)
             self.clk_prev = clk_curr
 
 '''

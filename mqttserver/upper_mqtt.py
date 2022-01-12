@@ -83,7 +83,7 @@ def on_disconnect(client, userdata, rc):
     print("client disconnected. Reason code", rc)
 
     # Attempts to reconnect to broker (self)
-    time.sleep(3s)
+    time.sleep(3)
     try:
         client.connect(broker, port, keepalive=5)
     except:

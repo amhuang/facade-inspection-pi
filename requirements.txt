@@ -1,0 +1,15 @@
+cmake 
+libjpeg8-dev
+build-essential
+python
+quilt
+python-setuptools
+python3
+libssl-dev
+cmake
+libc-ares-dev
+uuid-dev
+daemon
+libwebsockets-dev
+i2c-tools
+python-smbus
